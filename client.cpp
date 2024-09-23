@@ -71,6 +71,10 @@ void client::handle_connect(const boost::system::error_code &error,
         os << "Accept: */*\r\n";
         os << "Connection: close\r\n\r\n";
 
+        std::istream is(&requestbuf);
+        std::string requestStr((std::istreambuf_iterator<char>(is)), std::istreambuf_iterator<char>());
+
+        qDebug() << "Request buffer content:" << QString::fromStdString(requestStr);
         //write
         boost::asio::async_write(socket, requestbuf,
                                  boost::bind(
@@ -124,9 +128,89 @@ void client::handle_readLine(const boost::system::error_code &error)
         if(status_code != 200){
             return;
         }
+
+        boost::asio::async_read_until(socket, reponsebuf, "\r\n\r\n",
+                                      boost::bind(
+                                          &client::handle_readHeader,
+                                          this,
+                                          boost::asio::placeholders::error
+                                          )
+                                      );
         //3.
     }else{
         qDebug() << "handle read : " << error.message().c_str() << Qt::endl;
     }
 }
+
+void client::handle_readHeader(const boost::system::error_code &error)
+{
+    std::istream istrm(&reponsebuf);
+
+    std::string header;
+
+    while(std::getline(istrm,header) && header != "\r"){
+        //header
+        oss << header << std::endl;
+    }
+
+    boost::asio::streambuf::const_buffers_type buf = reponsebuf.data();
+    std::string str(boost::asio::buffers_begin(buf),
+                    boost::asio::buffers_begin(buf)+reponsebuf.size());
+
+    oss << str;
+
+    qDebug() << oss.str().c_str() << Qt::endl;
+
+    boost::asio::async_read(socket, reponsebuf,
+                            boost::asio::transfer_at_least(1), //1바이트라도 읽으면
+                            boost::bind(
+                                &client::handle_readContent,
+                                this,
+                                boost::asio::placeholders::error
+                                        )
+                            );
+
+}
+
+void client::handle_readContent(const boost::system::error_code &error)
+{
+    if(!error){
+        oss << &reponsebuf;
+
+        boost::asio::async_read(socket, reponsebuf,
+                                boost::asio::transfer_at_least(1), //1바이트라도 읽으면
+                                boost::bind(
+                                    &client::handle_readContent,
+                                    this,
+                                    boost::asio::placeholders::error
+                                    )
+                                );
+    }else if(error == boost::asio::error::eof){
+        qDebug() << oss.str().c_str() << Qt::endl;
+        emit read_finish(QString::fromStdString(oss.str()));
+    }else{
+        emit read_failed(QString::fromStdString(error.message()));
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

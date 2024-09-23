@@ -20,6 +20,7 @@ public:
 
 private slots:
     void on_btOk_clicked();
+    void on_success(const QString& msg);
 
 private:
     Ui::Clientmain *ui;

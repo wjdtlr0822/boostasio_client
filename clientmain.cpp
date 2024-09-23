@@ -14,7 +14,9 @@ Clientmain::Clientmain(QWidget *parent)
 
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    ui->lineEdit->setText("http://127.0.0.1:5000");
+    ui->lineEdit->setText("http://www.boost.org/LICENSE_1_0.txt");
+
+    connect(Client,SIGNAL(read_finish(QString)), this, SLOT(on_success(QString)));
 }
 
 Clientmain::~Clientmain()
@@ -38,5 +40,10 @@ void Clientmain::on_btOk_clicked()
         Client->Get(hostName, urlPath);
     }
     // Client->Get("www.boost.org","/");
+}
+
+void Clientmain::on_success(const QString &msg)
+{
+    ui->textEdit_2->setText(msg);
 }
 

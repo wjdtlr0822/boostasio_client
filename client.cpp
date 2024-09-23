@@ -73,8 +73,8 @@ void client::handle_connect(const boost::system::error_code &error,
 
         std::istream is(&requestbuf);
         std::string requestStr((std::istreambuf_iterator<char>(is)), std::istreambuf_iterator<char>());
-
         qDebug() << "Request buffer content:" << QString::fromStdString(requestStr);
+
         //write
         boost::asio::async_write(socket, requestbuf,
                                  boost::bind(
